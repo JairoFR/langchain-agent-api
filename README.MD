@@ -1,141 +1,101 @@
-# ⚡ FastAPI Boilerplate
+# LangChain Agent API — P5
 
-Base profesional y reutilizable para proyectos FastAPI.
-Clona este repositorio como punto de partida para nuevas APIs.
+API conversacional con memoria de sesión construida con FastAPI, LangChain y Groq.
 
-## 🛠️ Stack tecnológico
+## Stack
 
-- **Python 3.11**
-- **FastAPI** — framework para APIs REST
-- **Pydantic v2** — validación de datos
-- **Docker** — contenedorización
-- **Uvicorn** — servidor ASGI
-- **pytest** — testing
-
-## 📁 Estructura del proyecto
-
-```
-app/
-├── core/
-│   └── config.py    # configuración central con .env
-├── models/
-│   └── item.py      # modelos Pydantic — reemplaza con tu entidad
-├── routers/
-│   └── items.py     # endpoints — reemplaza con tu lógica
-└── main.py          # entrada principal, manejo de errores global
-tests/
-└── test_health.py   # tests base
-```
-
-## 🚀 Cómo usar este boilerplate
-
-### 1️⃣ Clona el repositorio
-```bash
-git clone git@github.com:JairoFR/fastapi-boilerplate.git mi-nuevo-proyecto
-cd mi-nuevo-proyecto
-```
-
-### 2️⃣ Desconecta del repo original y conecta al tuyo
+- **FastAPI** — framework web async
+- **LangChain** — orquestación del agente IA
+- **Groq API** — LLM ultrarrápido (llama-3.1-8b-instant)
+- **Pydantic V2** — validación de datos
+- **Pytest** — tests automatizados
 
 ```bash
-# 1. Elimina la historia git del boilerplate
-rm -rf .git
-
-# 2. Inicia git limpio
-git init
-
-# 3. Ve a GitHub y crea un nuevo repositorio vacío
-#    sin README, sin .gitignore, sin nada
-#    luego copia la URL SSH que te da GitHub y úsala aquí:
-git remote add origin git@github.com:TuUsuario/mi-nuevo-proyecto.git
-
-# 4. Verifica que quedó conectado a tu repo
-git remote -v
-
-# 5. Sube el código
-git add .
-git commit -m "feat: inicio del proyecto"
-git branch -M main
-git push -u origin main
+## Estructura
+langchain-agent-api/
+├── main.py                  # Punto de entrada
+├── app/
+│   ├── core/
+│   │   ├── agente.py        # Lógica LangChain + historial por sesión
+│   │   └── config.py        # Variables de entorno
+│   ├── models/
+│   │   └── chat.py          # Schemas Pydantic (request/response)
+│   └── routers/
+│       └── chat.py          # Endpoints FastAPI
+├── tests/
+│   └── test_chat.py         # 4 tests automatizados
+├── .env.example
+├── requirements.txt
+└── Dockerfile
 ```
 
-### 3️⃣ Crea el ambiente virtual
-```bash
-python3 -m venv env
-source env/bin/activate
-```
+## Instalación
 
-### 4️⃣ Instala las dependencias
 ```bash
-# Instala todas las librerías del proyecto
+git clone https://github.com/JairoFR/langchain-agent-api
+cd langchain-agent-api
+python -m venv env && source env/bin/activate
 pip install -r requirements.txt
-
-# Si agregas nuevas librerías actualiza el archivo
-pip freeze > requirements.txt
-```
-
-### 5️⃣ Configura las variables de entorno
-```bash
 cp .env.example .env
-# edita .env con tus valores
 ```
 
-### 6️⃣ Corre el servidor
-```bash
-uvicorn app.main:app --reload
-```
-
-## 🐳 Con Docker
+## Uso
 
 ```bash
-docker build -t mi-proyecto .
-docker run -p 8000:8000 mi-proyecto
+uvicorn main:app --reload
 ```
 
-## 🧪 Tests
+### Endpoint principal
+POST /chat/
+
+**Request:**
+```json
+{
+  "message": "Hola, ¿qué puedes hacer?",
+  "session_id": "jairo"
+}
+```
+
+**Response:**
+```json
+{
+  "response": "Puedo ayudarte con...",
+  "session_id": "jairo"
+}
+```
+
+### Otros endpoints
+GET /health     → {"status": "ok"}
+GET /docs       → Swagger UI interactivo
+
+## Tests
 
 ```bash
-# Correr todos los tests
-pytest tests/ -v
-
-# Ver cobertura
-pytest tests/ -v --tb=short
+pytest tests/test_chat.py -v
 ```
 
-## 📡 Endpoints base
+4 tests cubiertos:
+- `test_health` — servidor activo
+- `test_chat_responde` — respuesta válida del agente
+- `test_chat_historial` — memoria de sesión funciona
+- `test_sesiones_independientes` — sesiones aisladas entre usuarios
 
-| Método | Ruta | Descripción |
-|--------|------|-------------|
-| GET | /health | Estado del servidor |
-| GET | /items | Listar todos |
-| POST | /items | Crear nuevo |
-| GET | /items/{id} | Buscar uno |
-| PUT | /items/{id} | Actualizar |
-| DELETE | /items/{id} | Eliminar |
+## Cómo funciona
+Usuario → POST /chat/ → router → agente.py → LangChain → Groq API → respuesta
+↕
+historial en memoria
+(por session_id)
 
-## 📖 Documentación
+Cada `session_id` mantiene su propio historial de conversación en memoria.
+Sesiones distintas no comparten contexto.
 
-```
-http://localhost:8000/docs
-```
+## Variables de entorno
 
-## 🔄 Cómo adaptar a tu proyecto
+| Variable | Descripción |
+|---|---|
+| `GROQ_API_KEY` | API key de Groq (console.groq.com) |
 
-```
-1. Renombra app/models/item.py     → tu entidad
-2. Renombra app/routers/items.py   → tu lógica
-3. Actualiza app/main.py           → registra tu router
-4. Agrega variables en .env        → tu configuración
-5. Actualiza requirements.txt      → tus dependencias
-```
+##Uso
 
-## 📝 Variables de entorno
-
-Copia `.env.example` a `.env` y configura:
-
-```
-APP_NAME=nombre-de-tu-app
-VERSION=1.0.0
-DESCRIPTION=descripcion-de-tu-app
-DEBUG=False
-```
+- [x] Agente conversacional básico
+- [x] Historial por sesión en memoria
